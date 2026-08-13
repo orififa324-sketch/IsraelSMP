@@ -127,6 +127,106 @@ body{
 .link-tiktok:hover{border-color:rgba(255,255,255,0.3)}
 .link-instagram .icon{background:rgba(225,48,108,0.15)}
 .link-instagram:hover{border-color:rgba(225,48,108,0.4)}
+
+/* Status bar */
+.status-bar{
+  display:flex;
+  justify-content:center;
+  gap:24px;
+  margin-bottom:28px;
+}
+.status-item{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  padding:10px 18px;
+  font-size:14px;
+  font-weight:700;
+}
+.status-dot{
+  width:10px;height:10px;
+  border-radius:50%;
+  background:#5eff8a;
+  box-shadow:0 0 8px rgba(94,255,138,0.5);
+  animation:pulse 2s ease-in-out infinite;
+}
+.status-dot.offline{
+  background:#ff5e5e;
+  box-shadow:0 0 8px rgba(255,94,94,0.5);
+}
+@keyframes pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.5}
+}
+.status-count{
+  font-size:20px;
+  color:#7cb8ff;
+}
+
+/* Top section */
+.section-title{
+  font-size:20px;
+  font-weight:900;
+  margin:32px 0 16px;
+  color:#7cb8ff;
+  text-align:center;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.section-title svg{width:22px;height:22px}
+.top-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 6px;
+  direction:ltr;
+  margin-bottom:8px;
+}
+.top-table th{
+  font-size:12px;
+  color:rgba(180,210,255,0.5);
+  text-transform:uppercase;
+  letter-spacing:1px;
+  padding:4px 12px;
+  text-align:left;
+}
+.top-table th:last-child{text-align:right}
+.top-table td{
+  padding:10px 12px;
+  font-size:15px;
+  font-weight:700;
+}
+.top-table tr.top-row td{
+  background:rgba(255,255,255,0.05);
+  border-top:1px solid rgba(255,255,255,0.06);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.top-table tr.top-row td:first-child{
+  border-left:1px solid rgba(255,255,255,0.06);
+  border-radius:10px 0 0 10px;
+}
+.top-table tr.top-row td:last-child{
+  border-right:1px solid rgba(255,255,255,0.06);
+  border-radius:0 10px 10px 0;
+  text-align:right;
+  color:#5eff8a;
+}
+.rank{
+  width:28px;height:28px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:8px;
+  font-size:13px;font-weight:900;
+  margin-left:8px;
+}
+.rank-1{background:linear-gradient(135deg,#ffd700,#f0a500);color:#1a1a2e}
+.rank-2{background:linear-gradient(135deg,#c0c0c0,#8a8a8a);color:#1a1a2e}
+.rank-3{background:linear-gradient(135deg,#cd7f32,#a0522d);color:#1a1a2e}
+.rank-other{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6)}
+.player-name{display:flex;align-items:center;gap:8px}
+.player-head{
+  width:24px;height:24px;
+  border-radius:4px;
+  image-rendering:pixelated;
+}
 .footer{
   margin-top:40px;
   font-size:12px;
@@ -144,6 +244,19 @@ body{
     <span class="ip-text">play.israelsmp.net</span>
     <span class="copied-msg">Copied!</span>
   </div>
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Loading...</span>
+    </div>
+    <div class="status-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7cb8ff" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="status-count" id="playerCount">-</span>
+      <span style="color:rgba(255,255,255,0.5)">Online</span>
+    </div>
+  </div>
+
   <div class="links">
     <a href="https://discord.gg/JawZSCrKs" target="_blank" class="link-btn link-discord">
       <div class="icon"><svg viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg></div>
@@ -166,6 +279,17 @@ body{
       <span>Instagram</span>
     </a>
   </div>
+  <!-- Top 10 Richest -->
+  <div class="section-title">
+    <svg viewBox="0 0 24 24" fill="#ffd700"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+    Top 10 Richest Players
+    <svg viewBox="0 0 24 24" fill="#ffd700"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+  </div>
+  <table class="top-table" id="topTable">
+    <thead><tr><th>#</th><th>Player</th><th>Balance</th></tr></thead>
+    <tbody id="topBody"></tbody>
+  </table>
+
   <p class="footer">&copy; 2026 IsraelSMP. All rights reserved.</p>
 </div>
 <script>
@@ -179,6 +303,60 @@ for(let i=0;i<40;i++){
   s.style.background='rgba('+(60+Math.random()*80|0)+','+(140+Math.random()*60|0)+',255,'+(0.15+Math.random()*0.3).toFixed(2)+')';
   container.appendChild(s);
 }
+// Fetch server status
+async function fetchStatus(){
+  try{
+    const r=await fetch('https://api.mcstatus.io/v2/status/java/play.israelsmp.net');
+    const d=await r.json();
+    const dot=document.getElementById('statusDot');
+    const txt=document.getElementById('statusText');
+    const cnt=document.getElementById('playerCount');
+    if(d.online){
+      dot.classList.remove('offline');
+      txt.textContent='Online';
+      txt.style.color='#5eff8a';
+      cnt.textContent=d.players.online;
+    }else{
+      dot.classList.add('offline');
+      txt.textContent='Offline';
+      txt.style.color='#ff5e5e';
+      cnt.textContent='0';
+    }
+  }catch(e){
+    document.getElementById('statusText').textContent='Error';
+  }
+}
+fetchStatus();
+setInterval(fetchStatus,30000);
+
+// Top 10 placeholder data — replace with real API data later
+const topPlayers=[
+  {name:'Player1',balance:1250000},
+  {name:'Player2',balance:980000},
+  {name:'Player3',balance:750000},
+  {name:'Player4',balance:620000},
+  {name:'Player5',balance:510000},
+  {name:'Player6',balance:430000},
+  {name:'Player7',balance:350000},
+  {name:'Player8',balance:280000},
+  {name:'Player9',balance:210000},
+  {name:'Player10',balance:150000},
+];
+function renderTop(){
+  const tbody=document.getElementById('topBody');
+  tbody.innerHTML=topPlayers.map((p,i)=>{
+    const rc=i<3?'rank-'+(i+1):'rank-other';
+    const head=`https://mc-heads.net/avatar/${p.name}/24`;
+    const bal=p.balance.toLocaleString('en-US');
+    return `<tr class="top-row">
+      <td><span class="rank ${rc}">${i+1}</span></td>
+      <td><div class="player-name"><img class="player-head" src="${head}" alt="${p.name}">${p.name}</div></td>
+      <td>$${bal}</td>
+    </tr>`;
+  }).join('');
+}
+renderTop();
+
 function copyIP(el){
   navigator.clipboard.writeText('play.israelsmp.net').then(()=>{
     const msg=el.querySelector('.copied-msg');
