@@ -329,33 +329,33 @@ async function fetchStatus(){
 fetchStatus();
 setInterval(fetchStatus,30000);
 
-// Top 10 placeholder data — replace with real API data later
-const topPlayers=[
-  {name:'Player1',balance:1250000},
-  {name:'Player2',balance:980000},
-  {name:'Player3',balance:750000},
-  {name:'Player4',balance:620000},
-  {name:'Player5',balance:510000},
-  {name:'Player6',balance:430000},
-  {name:'Player7',balance:350000},
-  {name:'Player8',balance:280000},
-  {name:'Player9',balance:210000},
-  {name:'Player10',balance:150000},
-];
-function renderTop(){
+// Fetch top richest players from npoint.io
+async function fetchTop(){
   const tbody=document.getElementById('topBody');
-  tbody.innerHTML=topPlayers.map((p,i)=>{
-    const rc=i<3?'rank-'+(i+1):'rank-other';
-    const head=`https://mc-heads.net/avatar/${p.name}/24`;
-    const bal=p.balance.toLocaleString('en-US');
-    return `<tr class="top-row">
-      <td><span class="rank ${rc}">${i+1}</span></td>
-      <td><div class="player-name"><img class="player-head" src="${head}" alt="${p.name}">${p.name}</div></td>
-      <td>$${bal}</td>
-    </tr>`;
-  }).join('');
+  try{
+    const r=await fetch('https://api.npoint.io/6a4d3ae6ffde44eaac9b');
+    const d=await r.json();
+    if(!d.players||d.players.length===0){
+      tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:rgba(255,255,255,0.4);padding:20px">No data yet</td></tr>';
+      return;
+    }
+    const sorted=d.players.sort((a,b)=>b.bal-a.bal).slice(0,10);
+    tbody.innerHTML=sorted.map((p,i)=>{
+      const rc=i<3?'rank-'+(i+1):'rank-other';
+      const head=`https://mc-heads.net/avatar/${p.name}/24`;
+      const bal=Number(p.bal).toLocaleString('en-US');
+      return `<tr class="top-row">
+        <td><span class="rank ${rc}">${i+1}</span></td>
+        <td><div class="player-name"><img class="player-head" src="${head}" alt="${p.name}">${p.name}</div></td>
+        <td>$${bal}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#ff5e5e;padding:20px">Failed to load</td></tr>';
+  }
 }
-renderTop();
+fetchTop();
+setInterval(fetchTop,60000);
 
 function copyIP(el){
   navigator.clipboard.writeText('play.israelsmp.net').then(()=>{
