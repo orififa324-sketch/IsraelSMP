@@ -242,18 +242,18 @@ body{
   <div class="server-ip" onclick="copyIP(this)" title="Click to copy">
     <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
     <span class="ip-text">play.israelsmp.net</span>
-    <span class="copied-msg">Copied!</span>
+    <span class="copied-msg">הועתק!</span>
   </div>
   <!-- Status Bar -->
   <div class="status-bar">
     <div class="status-item">
       <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Loading...</span>
+      <span id="statusText">טוען...</span>
     </div>
     <div class="status-item">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7cb8ff" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       <span class="status-count" id="playerCount">-</span>
-      <span style="color:rgba(255,255,255,0.5)">Online</span>
+      <span style="color:rgba(255,255,255,0.5)">מחוברים</span>
     </div>
   </div>
 
@@ -282,11 +282,11 @@ body{
   <!-- Top 10 Richest -->
   <div class="section-title">
     <svg viewBox="0 0 24 24" fill="#ffd700"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-    Top 10 Richest Players
+    טופ 10 השחקנים העשירים
     <svg viewBox="0 0 24 24" fill="#ffd700"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
   </div>
   <table class="top-table" id="topTable">
-    <thead><tr><th>#</th><th>Player</th><th>Balance</th></tr></thead>
+    <thead><tr><th>#</th><th>שחקן</th><th>יתרה</th></tr></thead>
     <tbody id="topBody"></tbody>
   </table>
 
@@ -313,17 +313,17 @@ async function fetchStatus(){
     const cnt=document.getElementById('playerCount');
     if(d.online){
       dot.classList.remove('offline');
-      txt.textContent='Online';
+      txt.textContent='פעיל';
       txt.style.color='#5eff8a';
       cnt.textContent=d.players.online;
     }else{
       dot.classList.add('offline');
-      txt.textContent='Offline';
+      txt.textContent='כבוי';
       txt.style.color='#ff5e5e';
       cnt.textContent='0';
     }
   }catch(e){
-    document.getElementById('statusText').textContent='Error';
+    document.getElementById('statusText').textContent='שגיאה';
   }
 }
 fetchStatus();
@@ -336,7 +336,7 @@ async function fetchTop(){
     const r=await fetch('https://api.npoint.io/6a4d3ae6ffde44eaac9b');
     const d=await r.json();
     if(!d.players||d.players.length===0){
-      tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:rgba(255,255,255,0.4);padding:20px">No data yet</td></tr>';
+      tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:rgba(255,255,255,0.4);padding:20px">אין נתונים עדיין</td></tr>';
       return;
     }
     const sorted=d.players.sort((a,b)=>b.bal-a.bal).slice(0,10);
@@ -351,7 +351,7 @@ async function fetchTop(){
       </tr>`;
     }).join('');
   }catch(e){
-    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#ff5e5e;padding:20px">Failed to load</td></tr>';
+    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#ff5e5e;padding:20px">שגיאה בטעינה</td></tr>';
   }
 }
 fetchTop();
