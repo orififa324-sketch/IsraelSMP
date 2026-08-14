@@ -1104,9 +1104,15 @@ function renderMe(){
   const a=data.auth[session.id];
   const st=(a&&a.stats)?a.stats[currentBoard]:null;
   document.getElementById('meLabel').textContent=BOARDS[currentBoard].me;
-  document.getElementById('mePos').textContent=(st&&st.pos)?'#'+st.pos:'—';
+
+  // Rank 0 is not a rank - show a dash rather than "#0".
+  const pos=st&&st.pos?String(st.pos).trim():'';
+  const hasRank=pos&&pos!=='0'&&pos!=='-';
+  document.getElementById('mePos').textContent=hasRank?'#'+pos:'—';
+
+  const hasValue=st&&((st.raw!=null&&st.raw!=='')||(st.fmt!=null&&st.fmt!==''));
   document.getElementById('meValue').textContent=
-      st?displayValue(currentBoard,{raw:st.raw,fmt:st.fmt,value:0}):'—';
+      hasValue?displayValue(currentBoard,{raw:st.raw,fmt:st.fmt,value:0}):'—';
   document.getElementById('meWho').textContent=session.name;
   const img=document.getElementById('meHead');
   const src='https://mc-heads.net/avatar/'+encodeURIComponent(session.name)+'/20';
