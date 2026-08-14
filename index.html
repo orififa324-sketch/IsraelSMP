@@ -1058,6 +1058,12 @@ function syncAuth(){
     meMsg('לא מצאנו אותך מחובר לשרת. תיכנס למשחק ונסה שוב.','err');
     return;
   }
+  if(a&&a.error==='blocked'){
+    clearSession();
+    setStep('login');
+    meMsg('השחקן הזה חסם התחברות לאתר עם השם שלו. כדי לאשר - הרץ /linkblock במשחק.','err');
+    return;
+  }
   if(a&&a.check){
     setStep('code');
     if($me.msg.classList.contains('wait')||!$me.msg.textContent){
