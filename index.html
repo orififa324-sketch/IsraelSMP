@@ -272,11 +272,13 @@ body{
 /* Board sub-tabs */
 .board-tabs{
   display:flex;
+  flex-wrap:wrap;
   gap:6px;
   margin-bottom:14px;
 }
 .board-tabs button{
-  flex:1;
+  flex:1 1 calc(33.333% - 4px);
+  min-width:0;
   padding:9px 4px;
   border:1px solid rgba(255,255,255,0.08);
   border-radius:10px;
@@ -308,6 +310,99 @@ body{
 }
 .top-table tr.top-row td{transition:background .5s}
 .top-table tr.top-row.flash td{background:rgba(60,140,255,0.25)}
+.top-table tr.top-row.is-me td{
+  background:rgba(255,215,0,0.12);
+  border-color:rgba(255,215,0,0.35)!important;
+}
+
+/* "My stats" card */
+.me-card{
+  margin-top:18px;
+  padding:16px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:14px;
+  text-align:center;
+}
+.me-title{
+  font-size:14px;
+  font-weight:700;
+  color:rgba(180,210,255,0.8);
+  margin-bottom:12px;
+}
+.me-form{display:flex;gap:8px}
+.me-form input{
+  flex:1;min-width:0;
+  padding:11px 14px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(0,0,0,0.25);
+  color:#fff;
+  font-family:inherit;
+  font-size:15px;
+  font-weight:700;
+  text-align:center;
+  direction:ltr;
+}
+.me-form input:focus{outline:none;border-color:rgba(60,140,255,0.6)}
+.me-form input::placeholder{color:rgba(255,255,255,0.3);font-weight:400}
+.me-form button{
+  padding:11px 18px;
+  border-radius:10px;
+  border:1px solid rgba(60,140,255,0.45);
+  background:rgba(60,140,255,0.22);
+  color:#7cb8ff;
+  font-family:inherit;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:all .25s;
+  white-space:nowrap;
+}
+.me-form button:hover:not(:disabled){background:rgba(60,140,255,0.4);color:#fff}
+.me-form button:disabled{opacity:.45;cursor:default}
+.me-hint{
+  font-size:11px;
+  color:rgba(255,255,255,0.3);
+  margin-top:10px;
+}
+.me-msg{
+  font-size:12.5px;
+  margin-top:10px;
+  min-height:1em;
+}
+.me-msg.err{color:#ff7b7b}
+.me-msg.ok{color:#5eff8a}
+.me-msg.wait{color:rgba(180,210,255,0.6)}
+.me-stat{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:4px 2px;
+}
+.me-stat .me-rank{
+  font-size:22px;font-weight:900;color:#ffd700;
+  min-width:56px;text-align:right;direction:ltr;
+}
+.me-stat .me-label{
+  flex:1;text-align:right;
+  font-size:13px;color:rgba(255,255,255,0.55);
+}
+.me-stat .me-value{
+  font-size:19px;font-weight:900;color:#5eff8a;direction:ltr;
+}
+.me-who{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:12px;padding-top:12px;
+  border-top:1px solid rgba(255,255,255,0.07);
+  font-size:12px;color:rgba(255,255,255,0.4);
+}
+.me-who img{width:20px;height:20px;border-radius:4px;image-rendering:pixelated}
+.me-link{
+  background:none;border:none;padding:0;
+  color:rgba(180,210,255,0.55);
+  font-family:inherit;font-size:12px;
+  cursor:pointer;text-decoration:underline;
+}
+.me-link:hover{color:#7cb8ff}
 
 /* Balance toggle */
 .bal-toggle{
@@ -498,6 +593,9 @@ body.no-anim .bg-particles{display:none}
       <button class="active" data-board="balance">💰 כסף</button>
       <button data-board="playtime">⏱️ זמן משחק</button>
       <button data-board="kills">⚔️ הריגות</button>
+      <button data-board="deaths">💀 מיתות</button>
+      <button data-board="blocks_placed">🧱 הנחות</button>
+      <button data-board="blocks_broken">⛏️ שבירות</button>
     </div>
     <div class="section-title" id="boardTitle">
       <svg viewBox="0 0 24 24" fill="#ffd700"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
@@ -516,6 +614,44 @@ body.no-anim .bg-particles{display:none}
         </div>
       </label>
       <p class="live-note"><span class="dot"></span> מתעדכן אוטומטית בזמן אמת</p>
+    </div>
+
+    <!-- My stats -->
+    <div class="me-card" id="meCard">
+      <div id="meLogin">
+        <p class="me-title">רוצה לראות איפה אתה בטבלה?</p>
+        <div class="me-form">
+          <input id="meName" type="text" placeholder="שם המשתמש שלך" maxlength="16"
+                 autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button id="meSend">שלח קוד</button>
+        </div>
+        <p class="me-hint">תצטרך להיות מחובר לשרת - הקוד יישלח אליך בצ'אט</p>
+      </div>
+
+      <div id="meCodeStep" style="display:none">
+        <p class="me-title">שלחנו קוד לצ'אט שלך במשחק</p>
+        <div class="me-form">
+          <input id="meCodeInput" type="text" placeholder="הקוד מהצ'אט" maxlength="10"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button id="meVerify">אישור</button>
+        </div>
+        <p class="me-hint"><button class="me-link" id="meCancel">ביטול</button></p>
+      </div>
+
+      <div id="meStats" style="display:none">
+        <div class="me-stat">
+          <span class="me-rank" id="mePos">—</span>
+          <span class="me-label" id="meLabel">המיקום שלך</span>
+          <span class="me-value" id="meValue">—</span>
+        </div>
+        <div class="me-who">
+          <img id="meHead" src="" alt="">
+          <span id="meWho"></span>
+          <button class="me-link" id="meLogout">התנתקות</button>
+        </div>
+      </div>
+
+      <p class="me-msg" id="meMsg"></p>
     </div>
   </div><!-- /viewBoards -->
 
@@ -563,18 +699,31 @@ for(let i=0;i<40;i++){
    that feed on a timer, so nothing here ever needs a manual refresh.
    ========================================================================== */
 const DATA_URL='https://api.npoint.io/6a4d3ae6ffde44eaac9b';
+
+// Second npoint bin - this is how the site asks the server to send a login code.
+// Create it at https://www.npoint.io with the contents {"requests":[]} and paste
+// its API url here AND into the plugin's config.yml (request-url).
+// Leave it as '' to hide the login box entirely.
+const REQUEST_URL='';
+
 const POLL_MS=5000;          // how often we re-read the feed
 const STALE_MS=150000;       // no fresh push for this long -> treat server as down
+const CODE_WAIT_MS=90000;    // how long we wait for the server to answer a code request
 
 const BOARDS={
-  balance :{title:'טופ 10 השחקנים העשירים', head:'יתרה',      suffix:''},
-  playtime:{title:'טופ 10 בזמן משחק',        head:'זמן משחק',  suffix:''},
-  kills   :{title:'טופ 10 בהריגות שחקנים',   head:'הריגות',    suffix:''}
+  balance      :{title:'טופ 10 השחקנים העשירים', head:'יתרה',    me:'היתרה שלך'},
+  playtime     :{title:'טופ 10 בזמן משחק',        head:'זמן משחק', me:'זמן המשחק שלך'},
+  kills        :{title:'טופ 10 בהריגות שחקנים',   head:'הריגות',   me:'ההריגות שלך'},
+  deaths       :{title:'טופ 10 במיתות',            head:'מיתות',    me:'המיתות שלך'},
+  blocks_placed:{title:'טופ 10 בהנחת בלוקים',      head:'בלוקים',   me:'הבלוקים שהנחת'},
+  blocks_broken:{title:'טופ 10 בשבירת בלוקים',     head:'בלוקים',   me:'הבלוקים ששברת'}
 };
+const BOARD_KEYS=Object.keys(BOARDS);
 
 let currentBoard='balance';
 let shortBal=false;
-let data={online:null,max:null,ts:0,balance:[],playtime:[],kills:[]};
+let data={online:null,max:null,ts:0,auth:{}};
+BOARD_KEYS.forEach(k=>data[k]=[]);
 let loadFailed=false;
 let renderedKey='';           // what the table currently shows
 let prevRows={};              // per-board snapshot, used to flash rows that moved
@@ -622,17 +771,19 @@ function renderBoard(){
   }
 
   // Skip the DOM write entirely when nothing about this view changed.
-  const key=currentBoard+'|'+shortBal+'|'+rows.map(r=>r.name+':'+r.raw+':'+r.fmt).join(',');
+  const key=boardKey(rows);
   if(key===renderedKey) return;
   renderedKey=key;
 
   const before=prevRows[currentBoard]||{};
+  const mine=session.verified?session.name.toLowerCase():null;
   tbody.innerHTML=rows.map((p,i)=>{
     const rc=i<3?'rank-'+(i+1):'rank-other';
     const head=`https://mc-heads.net/avatar/${encodeURIComponent(p.name)}/24`;
     const val=displayValue(currentBoard,p);
     const moved=before[p.name]!==undefined && before[p.name]!==p.raw;
-    return `<tr class="top-row${moved?' flash':''}">
+    const isMe=mine && p.name.toLowerCase()===mine;
+    return `<tr class="top-row${moved?' flash':''}${isMe?' is-me':''}">
       <td><span class="rank ${rc}">${i+1}</span></td>
       <td><div class="player-name"><img class="player-head" src="${head}" alt="">${esc(p.name)}</div></td>
       <td>${esc(val)}</td>
@@ -645,6 +796,13 @@ function renderBoard(){
   const snap={};
   rows.forEach(r=>{snap[r.name]=r.raw});
   prevRows[currentBoard]=snap;
+}
+
+// The key includes the login state, so the "this is me" highlight appears the
+// moment someone verifies rather than waiting for the next data change.
+function boardKey(rows){
+  return currentBoard+'|'+shortBal+'|'+(session.verified?session.name:'')+'|'
+       +rows.map(r=>r.name+':'+r.raw+':'+r.fmt).join(',');
 }
 
 function renderStatus(){
@@ -696,23 +854,254 @@ async function poll(){
     data.online=Number.isFinite(d.online)?d.online:data.online;
     data.max=Number.isFinite(d.max)?d.max:data.max;
     data.ts=Number(d.ts)||data.ts;
-    data.balance =normalise(d.balance).length?normalise(d.balance)
-                 :normalise((d.players||[]).map(p=>({name:p.name,value:p.bal})));
-    data.playtime=normalise(d.playtime);
-    data.kills   =normalise(d.kills);
+    data.auth=(d.auth&&typeof d.auth==='object')?d.auth:{};
+    BOARD_KEYS.forEach(k=>{data[k]=normalise(d[k])});
+    // fall back to the legacy "players" key if an old plugin build is still running
+    if(!data.balance.length&&Array.isArray(d.players)){
+      data.balance=normalise(d.players.map(p=>({name:p.name,value:p.bal})));
+    }
   }catch(e){
     loadFailed=true;
   }
   renderStatus();
   renderBoard();
+  syncAuth();
 }
 
-poll();
-setInterval(poll,POLL_MS);
-// keep the "how long since the last push" judgement honest between polls
-setInterval(renderStatus,10000);
-// a tab that was in the background can be several polls behind - catch up at once
-document.addEventListener('visibilitychange',()=>{if(!document.hidden) poll()});
+/* ==========================================================================
+   "My stats" login
+   The site cannot talk to the server directly (no open port), so the handshake
+   goes through a second npoint bin: the site drops a {id, name} request in it,
+   the plugin picks it up, DMs a code to that player in-game, and publishes
+   sha256(code) back in the main feed. Typing the code proves you are that
+   player, because only they could have read it.
+   ========================================================================== */
+const LS_KEY='israelsmp_me';
+let session={id:null,name:'',verified:false,requestedAt:0};
+
+function loadSession(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(raw) session=Object.assign(session,JSON.parse(raw));
+  }catch(e){/* private mode / storage disabled - login just won't persist */}
+}
+function saveSession(){
+  try{localStorage.setItem(LS_KEY,JSON.stringify(session))}catch(e){}
+}
+function clearSession(){
+  session={id:null,name:'',verified:false,requestedAt:0};
+  try{localStorage.removeItem(LS_KEY)}catch(e){}
+}
+
+function randomId(){
+  try{
+    if(crypto.randomUUID) return crypto.randomUUID().replace(/-/g,'');
+    const a=new Uint8Array(16); crypto.getRandomValues(a);
+    return [...a].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }catch(e){
+    return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  }
+}
+async function sha256hex(s){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+const $me={
+  card  :document.getElementById('meCard'),
+  login :document.getElementById('meLogin'),
+  code  :document.getElementById('meCodeStep'),
+  stats :document.getElementById('meStats'),
+  msg   :document.getElementById('meMsg'),
+  name  :document.getElementById('meName'),
+  input :document.getElementById('meCodeInput'),
+  send  :document.getElementById('meSend'),
+  verify:document.getElementById('meVerify')
+};
+
+function setStep(step){
+  $me.login.style.display=step==='login'?'':'none';
+  $me.code .style.display=step==='code' ?'':'none';
+  $me.stats.style.display=step==='stats'?'':'none';
+}
+function meMsg(text,cls){
+  $me.msg.textContent=text||'';
+  $me.msg.className='me-msg'+(cls?' '+cls:'');
+}
+
+/* ---- step 1: ask the server to send a code ------------------------------- */
+
+async function sendCode(){
+  const name=$me.name.value.trim();
+  if(!/^[A-Za-z0-9_]{3,16}$/.test(name)){
+    meMsg('שם משתמש לא תקין','err');
+    return;
+  }
+  if(!(window.crypto&&crypto.subtle)){
+    meMsg('הדפדפן לא תומך באימות מאובטח','err');
+    return;
+  }
+  $me.send.disabled=true;
+  meMsg('שולח בקשה לשרת...','wait');
+  try{
+    // read-modify-write: the bin is one shared document, so keep the other
+    // pending requests and prune anything the plugin has had time to see
+    let doc={requests:[]};
+    try{
+      const r=await fetch(REQUEST_URL+'?_='+Date.now(),{cache:'no-store'});
+      if(r.ok){
+        const j=await r.json();
+        if(j&&Array.isArray(j.requests)) doc.requests=j.requests;
+      }
+    }catch(e){/* start from an empty list */}
+
+    const cutoff=Date.now()-600000;
+    doc.requests=doc.requests.filter(q=>q&&q.t>cutoff).slice(-20);
+
+    const id=randomId();
+    doc.requests.push({id:id,name:name,t:Date.now()});
+
+    const res=await fetch(REQUEST_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(doc)
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+
+    session={id:id,name:name,verified:false,requestedAt:Date.now()};
+    saveSession();
+    setStep('code');
+    meMsg('ממתין לשרת...','wait');
+    $me.input.value='';
+    $me.input.focus();
+  }catch(e){
+    meMsg('לא הצלחנו לשלוח את הבקשה. נסה שוב.','err');
+  }finally{
+    $me.send.disabled=false;
+  }
+}
+
+/* ---- step 2: check the code against the hash the server published -------- */
+
+async function verifyCode(){
+  const a=data.auth[session.id];
+  if(!a||!a.check){
+    meMsg('עדיין מחכים לשרת, רגע...','wait');
+    return;
+  }
+  const code=$me.input.value.trim().toUpperCase().replace(/\s+/g,'');
+  if(!code){ meMsg('הזן את הקוד','err'); return; }
+
+  $me.verify.disabled=true;
+  try{
+    const h=await sha256hex(code);
+    if(h!==a.check){
+      meMsg('קוד שגוי','err');
+      return;
+    }
+    session.verified=true;
+    session.code=code;      // kept so a restored session can re-prove itself
+    saveSession();
+    meMsg('','');
+    setStep('stats');
+    renderMe();
+    renderedKey='';        // repaint the table so the highlight shows up
+    renderBoard();
+  }catch(e){
+    meMsg('שגיאה באימות','err');
+  }finally{
+    $me.verify.disabled=false;
+  }
+}
+
+/* ---- every poll: keep the card in step with what the server published ---- */
+
+let recheckDone=false;
+
+function expire(msg){
+  clearSession();
+  recheckDone=false;
+  setStep('login');
+  meMsg(msg,'err');
+  renderedKey='';
+  renderBoard();
+}
+
+function syncAuth(){
+  if(!REQUEST_URL){ $me.card.style.display='none'; return; }
+  const a=session.id?data.auth[session.id]:null;
+
+  if(session.verified){
+    // The plugin drops a session when it expires, which is our cue too.
+    if(data.ts&&(!a||!a.check)){
+      expire('ההתחברות פגה - התחבר שוב');
+      return;
+    }
+    // A session restored from storage has not actually been checked against the
+    // server yet - do it once, so a stale or swapped entry cannot walk straight in.
+    if(a&&a.check&&!recheckDone){
+      recheckDone=true;
+      sha256hex(session.code||'').then(h=>{
+        if(h!==a.check) expire('ההתחברות פגה - התחבר שוב');
+      }).catch(()=>{});
+    }
+    setStep('stats');
+    renderMe();
+    return;
+  }
+
+  if(!session.id){ setStep('login'); return; }
+
+  if(a&&a.error==='offline'){
+    clearSession();
+    setStep('login');
+    meMsg('לא מצאנו אותך מחובר לשרת. תיכנס למשחק ונסה שוב.','err');
+    return;
+  }
+  if(a&&a.check){
+    setStep('code');
+    if($me.msg.classList.contains('wait')||!$me.msg.textContent){
+      meMsg('הקוד נשלח אליך בצ\'אט במשחק','ok');
+    }
+    return;
+  }
+  if(Date.now()-session.requestedAt>CODE_WAIT_MS){
+    clearSession();
+    setStep('login');
+    meMsg('השרת לא ענה. ודא שהשרת מחובר ונסה שוב.','err');
+    return;
+  }
+  setStep('code');
+}
+
+function renderMe(){
+  const a=data.auth[session.id];
+  const st=(a&&a.stats)?a.stats[currentBoard]:null;
+  document.getElementById('meLabel').textContent=BOARDS[currentBoard].me;
+  document.getElementById('mePos').textContent=(st&&st.pos)?'#'+st.pos:'—';
+  document.getElementById('meValue').textContent=
+      st?displayValue(currentBoard,{raw:st.raw,fmt:st.fmt,value:0}):'—';
+  document.getElementById('meWho').textContent=session.name;
+  const img=document.getElementById('meHead');
+  const src='https://mc-heads.net/avatar/'+encodeURIComponent(session.name)+'/20';
+  if(img.getAttribute('src')!==src) img.setAttribute('src',src);
+}
+
+$me.send.addEventListener('click',sendCode);
+$me.verify.addEventListener('click',verifyCode);
+$me.name.addEventListener('keydown',e=>{if(e.key==='Enter')sendCode()});
+$me.input.addEventListener('keydown',e=>{if(e.key==='Enter')verifyCode()});
+document.getElementById('meCancel').addEventListener('click',()=>{
+  clearSession(); setStep('login'); meMsg('','');
+});
+document.getElementById('meLogout').addEventListener('click',()=>{
+  clearSession(); setStep('login'); meMsg('','');
+  renderedKey=''; renderBoard();
+});
+
+loadSession();
+setStep(session.verified?'stats':(session.id?'code':'login'));
+if(!REQUEST_URL) $me.card.style.display='none';
 
 /* ---- tabs ---------------------------------------------------------------- */
 
@@ -731,6 +1120,7 @@ document.querySelectorAll('.board-tabs button').forEach(btn=>{
     btn.classList.add('active');
     currentBoard=btn.dataset.board;
     renderBoard();
+    if(session.verified) renderMe();
   });
 });
 
@@ -739,7 +1129,18 @@ document.getElementById('balToggle').addEventListener('click',()=>{
   shortBal=!shortBal;
   document.getElementById('balTrack').classList.toggle('active',shortBal);
   renderBoard();
+  if(session.verified) renderMe();
 });
+
+/* ---- start the clock ------------------------------------------------------
+   Kept last on purpose: poll() touches the login state above, so everything it
+   depends on has to be defined before the first tick fires. */
+poll();
+setInterval(poll,POLL_MS);
+// keep the "how long since the last push" judgement honest between polls
+setInterval(renderStatus,10000);
+// a tab that was in the background can be several polls behind - catch up at once
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) poll()});
 
 function copyIP(el){
   navigator.clipboard.writeText('play.israelsmp.net').then(()=>{
