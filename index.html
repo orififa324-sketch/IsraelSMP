@@ -4,8 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IsraelSMP - Links</title>
+<!-- Warm up every host we are about to hit, before the parser gets to them. -->
+<link rel="preconnect" href="https://api.npoint.io" crossorigin>
+<link rel="preconnect" href="https://mc-heads.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- ===========================================================================
+     SETTINGS - the two npoint bins. Edit them here and nowhere else.
+     =========================================================================== -->
+<script>
+window.DATA_URL   ='https://api.npoint.io/6a4d3ae6ffde44eaac9b';  // plugin -> site
+window.REQUEST_URL='https://api.npoint.io/040d0ef7d86ce7a938d3';  // site -> plugin
+
+// Fire the data request HERE, in <head>, before the stylesheet, the fonts, the
+// logo or the body have been dealt with. The round trip then runs alongside all
+// of that instead of starting after it, which is most of the wait on a refresh.
+try{
+  window.__firstFetch=fetch(window.DATA_URL+'?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.json():null})
+    .catch(function(){return null});
+}catch(e){ window.__firstFetch=null; }
+
+// Last known good feed, so a refresh paints real numbers immediately instead of
+// an empty table. It is replaced the moment the live data lands.
+try{
+  var c=localStorage.getItem('israelsmp_feed');
+  window.__cached=c?JSON.parse(c):null;
+}catch(e){ window.__cached=null; }
+</script>
+
+<!-- Loaded without blocking the first paint; the fallback font is fine until it lands. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap"></noscript>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{
@@ -649,7 +681,7 @@ body.no-anim .bg-particles{display:none}
           <span class="me-value" id="meValue">—</span>
         </div>
         <div class="me-who">
-          <img id="meHead" src="" alt="">
+          <img id="meHead" alt="" decoding="async" width="20" height="20">
           <span id="meWho"></span>
           <button class="me-link" id="meLogout">התנתקות</button>
         </div>
@@ -702,13 +734,11 @@ for(let i=0;i<40;i++){
    leaderboards and the live player count every few seconds. The page polls
    that feed on a timer, so nothing here ever needs a manual refresh.
    ========================================================================== */
-const DATA_URL='https://api.npoint.io/6a4d3ae6ffde44eaac9b';
-
-// Second npoint bin - this is how the site asks the server to send a login code.
-// Create it at https://www.npoint.io with the contents {"requests":[]} and paste
-// its API url here AND into the plugin's config.yml (request-url).
-// Leave it as '' to hide the login box entirely.
-const REQUEST_URL='https://api.npoint.io/040d0ef7d86ce7a938d3';
+// Both urls are set in the <head> settings block, so the request can start before
+// this script exists. REQUEST_URL is the second bin (site -> plugin, login codes);
+// blank it there to hide the login box entirely.
+const DATA_URL=window.DATA_URL;
+const REQUEST_URL=window.REQUEST_URL||'';
 
 const POLL_MS=5000;          // how often we re-read the feed
 const STALE_MS=150000;       // no fresh push for this long -> treat server as down
@@ -756,6 +786,47 @@ function esc(s){
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+/* ---- player heads --------------------------------------------------------
+   Three independent avatar services, tried in order. Any one of them can be
+   slow, rate-limited or simply not know a name, and a head that fails should
+   never leave a gap in the row - the last step is a drawn placeholder that
+   always renders, with no network involved. */
+const HEAD_PROVIDERS=[
+  (n,s)=>`https://mc-heads.net/avatar/${encodeURIComponent(n)}/${s}`,
+  (n,s)=>`https://minotar.net/helm/${encodeURIComponent(n)}/${s}`,
+  (n,s)=>`https://crafthead.net/helm/${encodeURIComponent(n)}/${s}`
+];
+const HEAD_PLACEHOLDER='data:image/svg+xml;utf8,'+encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">'+
+  '<rect width="32" height="32" fill="#2a3550"/>'+
+  '<rect x="8" y="7" width="16" height="14" fill="#4a5a80"/>'+
+  '<rect x="11" y="12" width="3" height="3" fill="#0a0e1a"/>'+
+  '<rect x="18" y="12" width="3" height="3" fill="#0a0e1a"/>'+
+  '</svg>');
+
+function headTag(name,size,cls){
+  return `<img class="${cls}" src="${HEAD_PROVIDERS[0](name,size)}" `
+       + `data-head="${esc(name)}" data-size="${size}" data-p="0" `
+       + `alt="" decoding="async" width="${size}" height="${size}">`;
+}
+
+/** Re-points a head at the next provider, then at the placeholder. */
+function onHeadError(e){
+  const img=e.target;
+  const i=(parseInt(img.dataset.p,10)||0)+1;
+  img.dataset.p=i;
+  const name=img.dataset.head, size=img.dataset.size||24;
+  img.src=i<HEAD_PROVIDERS.length?HEAD_PROVIDERS[i](name,size):HEAD_PLACEHOLDER;
+}
+
+function wireHeads(root){
+  root.querySelectorAll('img[data-head]').forEach(img=>{
+    if(img.__wired) return;
+    img.__wired=true;
+    img.addEventListener('error',onHeadError);
+  });
+}
+
 /* ---- rendering ----------------------------------------------------------- */
 
 function renderBoard(){
@@ -783,16 +854,16 @@ function renderBoard(){
   const mine=session.verified?session.name.toLowerCase():null;
   tbody.innerHTML=rows.map((p,i)=>{
     const rc=i<3?'rank-'+(i+1):'rank-other';
-    const head=`https://mc-heads.net/avatar/${encodeURIComponent(p.name)}/24`;
     const val=displayValue(currentBoard,p);
     const moved=before[p.name]!==undefined && before[p.name]!==p.raw;
     const isMe=mine && p.name.toLowerCase()===mine;
     return `<tr class="top-row${moved?' flash':''}${isMe?' is-me':''}">
       <td><span class="rank ${rc}">${i+1}</span></td>
-      <td><div class="player-name"><img class="player-head" src="${head}" alt="">${esc(p.name)}</div></td>
+      <td><div class="player-name">${headTag(p.name,24,'player-head')}${esc(p.name)}</div></td>
       <td>${esc(val)}</td>
     </tr>`;
   }).join('');
+  wireHeads(tbody);
 
   // clear the highlight after it has had a moment to read
   setTimeout(()=>tbody.querySelectorAll('.flash').forEach(el=>el.classList.remove('flash')),900);
@@ -847,13 +918,32 @@ function normalise(list){
   }));
 }
 
+let pendingFirst=window.__firstFetch||null;
+let lastCachedTs=0;
+
+/** Keeps the last good feed so the next refresh has something to paint at once. */
+function cacheFeed(d){
+  if(!d||d.ts===lastCachedTs) return;
+  lastCachedTs=d.ts;
+  try{ localStorage.setItem('israelsmp_feed',JSON.stringify(d)); }catch(e){}
+}
+
 async function poll(){
   try{
-    // cache-buster: some CDNs happily serve a stale copy for a full minute
-    const r=await fetch(DATA_URL+'?_='+Date.now(),{cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json();
+    let d;
+    if(pendingFirst){
+      // The <head> already asked for this; awaiting it costs nothing extra.
+      d=await pendingFirst;
+      pendingFirst=null;
+      if(!d) throw new Error('first fetch failed');
+    }else{
+      // cache-buster: some CDNs happily serve a stale copy for a full minute
+      const r=await fetch(DATA_URL+'?_='+Date.now(),{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      d=await r.json();
+    }
     loadFailed=false;
+    cacheFeed(d);
 
     data.online=Number.isFinite(d.online)?d.online:data.online;
     data.max=Number.isFinite(d.max)?d.max:data.max;
@@ -1114,9 +1204,15 @@ function renderMe(){
   document.getElementById('meValue').textContent=
       hasValue?displayValue(currentBoard,{raw:st.raw,fmt:st.fmt,value:0}):'—';
   document.getElementById('meWho').textContent=session.name;
+
   const img=document.getElementById('meHead');
-  const src='https://mc-heads.net/avatar/'+encodeURIComponent(session.name)+'/20';
-  if(img.getAttribute('src')!==src) img.setAttribute('src',src);
+  if(img.dataset.head!==session.name){
+    img.dataset.head=session.name;
+    img.dataset.size=20;
+    img.dataset.p=0;
+    img.src=HEAD_PROVIDERS[0](session.name,20);
+    wireHeads(img.parentNode);
+  }
 }
 
 $me.send.addEventListener('click',()=>sendCode());
@@ -1170,6 +1266,24 @@ document.getElementById('balToggle').addEventListener('click',()=>{
   renderBoard();
   if(session.verified) renderMe();
 });
+
+/* ---- first paint ----------------------------------------------------------
+   Draw the previous feed straight away so a refresh shows real numbers instead
+   of "טוען...". Only the boards are painted from it: the player count and the
+   login state are live facts that a stale copy has no business asserting, so
+   those wait for the real response a moment later. */
+(function paintCache(){
+  const c=window.__cached;
+  if(!c) return;
+  try{
+    BOARD_KEYS.forEach(k=>{data[k]=normalise(c[k])});
+    if(!data.balance.length&&Array.isArray(c.players)){
+      data.balance=normalise(c.players.map(p=>({name:p.name,value:p.bal})));
+    }
+    lastCachedTs=c.ts||0;
+    renderBoard();
+  }catch(e){/* a bad cache entry is not worth failing the page over */}
+})();
 
 /* ---- start the clock ------------------------------------------------------
    Kept last on purpose: poll() touches the login state above, so everything it
