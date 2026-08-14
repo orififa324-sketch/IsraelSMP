@@ -635,7 +635,11 @@ body.no-anim .bg-particles{display:none}
                  autocomplete="off" autocapitalize="characters" spellcheck="false">
           <button id="meVerify">אישור</button>
         </div>
-        <p class="me-hint"><button class="me-link" id="meCancel">ביטול</button></p>
+        <p class="me-hint">
+          <button class="me-link" id="meResend">שלח קוד חדש</button>
+          &nbsp;·&nbsp;
+          <button class="me-link" id="meCancel">ביטול</button>
+        </p>
       </div>
 
       <div id="meStats" style="display:none">
@@ -931,8 +935,11 @@ function meMsg(text,cls){
 
 /* ---- step 1: ask the server to send a code ------------------------------- */
 
-async function sendCode(){
-  const name=$me.name.value.trim();
+async function sendCode(nameOverride){
+  // Guard the type: this is also wired to a click handler, which would otherwise
+  // hand us an Event object here.
+  const source=(typeof nameOverride==='string'&&nameOverride)?nameOverride:$me.name.value;
+  const name=String(source).trim();
   if(!/^[A-Za-z0-9_]{3,16}$/.test(name)){
     meMsg('שם משתמש לא תקין','err');
     return;
@@ -984,19 +991,22 @@ async function sendCode(){
 /* ---- step 2: check the code against the hash the server published -------- */
 
 async function verifyCode(){
-  const a=data.auth[session.id];
-  if(!a||!a.check){
-    meMsg('עדיין מחכים לשרת, רגע...','wait');
-    return;
-  }
   const code=$me.input.value.trim().toUpperCase().replace(/\s+/g,'');
   if(!code){ meMsg('הזן את הקוד','err'); return; }
 
   $me.verify.disabled=true;
   try{
+    // Read the hash fresh on every attempt. A previous failed try must never
+    // leave a stale value behind that makes the right code look wrong.
+    const a=data.auth[session.id];
+    if(!a||!a.check){
+      meMsg('הקוד כבר לא תקף. לחץ "שלח קוד חדש".','err');
+      return;
+    }
     const h=await sha256hex(code);
     if(h!==a.check){
-      meMsg('קוד שגוי','err');
+      meMsg('קוד שגוי - בדוק שוב בצ\'אט, או שלח קוד חדש.','err');
+      $me.input.select();
       return;
     }
     session.verified=true;
@@ -1018,10 +1028,12 @@ async function verifyCode(){
 /* ---- every poll: keep the card in step with what the server published ---- */
 
 let lastCheck=null;   // the code-hash we last validated against
+let missCount=0;      // consecutive polls where our session was absent
 
 function expire(msg){
   clearSession();
   lastCheck=null;
+  missCount=0;
   setStep('login');
   meMsg(msg,'err');
   renderedKey='';
@@ -1051,11 +1063,13 @@ function syncAuth(){
   }
 
   if(session.verified){
-    // The plugin drops a session when it expires, which is our cue too.
+    // The plugin drops a session when it expires, which is our cue too - but only
+    // after it stays gone. One odd payload should not sign anyone out.
     if(data.ts&&(!a||!a.check)){
-      expire('ההתחברות פגה - התחבר שוב');
+      if(++missCount>=2){ expire('ההתחברות פגה - התחבר שוב'); }
       return;
     }
+    missCount=0;
     // Re-prove the stored code against the published hash whenever that hash is
     // one we have not checked yet. Covers a session restored from storage, and a
     // slot that got reissued to a fresh code while this tab was sitting open.
@@ -1071,18 +1085,19 @@ function syncAuth(){
     return;
   }
 
+  // Still waiting to type the code. Whatever happens here we stay on this step:
+  // the resend button is the way out, so a mistyped code is never a dead end.
+  setStep('code');
   if(a&&a.check){
-    setStep('code');
     if($me.msg.classList.contains('wait')||!$me.msg.textContent){
       meMsg('הקוד נשלח אליך בצ\'אט במשחק','ok');
     }
     return;
   }
-  if(Date.now()-session.requestedAt>CODE_WAIT_MS){
-    expire('השרת לא ענה. ודא שהשרת מחובר ונסה שוב.');
-    return;
+  if(Date.now()-session.requestedAt>CODE_WAIT_MS
+     &&($me.msg.classList.contains('wait')||!$me.msg.textContent)){
+    meMsg('השרת לא ענה. ודא שאתה מחובר לשרת ולחץ "שלח קוד חדש".','err');
   }
-  setStep('code');
 }
 
 function renderMe(){
@@ -1098,12 +1113,19 @@ function renderMe(){
   if(img.getAttribute('src')!==src) img.setAttribute('src',src);
 }
 
-$me.send.addEventListener('click',sendCode);
-$me.verify.addEventListener('click',verifyCode);
+$me.send.addEventListener('click',()=>sendCode());
+$me.verify.addEventListener('click',()=>verifyCode());
 $me.name.addEventListener('keydown',e=>{if(e.key==='Enter')sendCode()});
 $me.input.addEventListener('keydown',e=>{if(e.key==='Enter')verifyCode()});
+document.getElementById('meResend').addEventListener('click',()=>{
+  const who=session.name;
+  clearSession();
+  lastCheck=null;
+  meMsg('','');
+  sendCode(who);
+});
 document.getElementById('meCancel').addEventListener('click',()=>{
-  clearSession(); setStep('login'); meMsg('','');
+  clearSession(); lastCheck=null; setStep('login'); meMsg('','');
 });
 document.getElementById('meLogout').addEventListener('click',()=>{
   clearSession(); setStep('login'); meMsg('','');
