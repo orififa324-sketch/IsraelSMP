@@ -1001,6 +1001,7 @@ async function verifyCode(){
     }
     session.verified=true;
     session.code=code;      // kept so a restored session can re-prove itself
+    lastCheck=a.check;
     saveSession();
     meMsg('','');
     setStep('stats');
@@ -1016,11 +1017,11 @@ async function verifyCode(){
 
 /* ---- every poll: keep the card in step with what the server published ---- */
 
-let recheckDone=false;
+let lastCheck=null;   // the code-hash we last validated against
 
 function expire(msg){
   clearSession();
-  recheckDone=false;
+  lastCheck=null;
   setStep('login');
   meMsg(msg,'err');
   renderedKey='';
@@ -1029,7 +1030,25 @@ function expire(msg){
 
 function syncAuth(){
   if(!REQUEST_URL){ $me.card.style.display='none'; return; }
-  const a=session.id?data.auth[session.id]:null;
+  if(!session.id){ setStep('login'); return; }
+  const a=data.auth[session.id];
+  const who=session.name;
+
+  // An explicit signal from the server outranks whatever the page thinks.
+  // /linklogout and /linkblock leave one of these behind precisely so the page
+  // can explain itself instead of silently dropping to the login box.
+  if(a&&a.error){
+    if(a.error==='logout'){
+      expire('נותקת מהחשבון '+who+' דרך המשחק.');
+    }else if(a.error==='blocked'){
+      expire('החשבון '+who+' חסם התחברות לאתר. כדי לאשר - הרץ /linkblock במשחק.');
+    }else if(a.error==='offline'){
+      expire('לא מצאנו אותך מחובר לשרת. תיכנס למשחק ונסה שוב.');
+    }else{
+      expire('ההתחברות נכשלה. נסה שוב.');
+    }
+    return;
+  }
 
   if(session.verified){
     // The plugin drops a session when it expires, which is our cue too.
@@ -1037,12 +1056,14 @@ function syncAuth(){
       expire('ההתחברות פגה - התחבר שוב');
       return;
     }
-    // A session restored from storage has not actually been checked against the
-    // server yet - do it once, so a stale or swapped entry cannot walk straight in.
-    if(a&&a.check&&!recheckDone){
-      recheckDone=true;
+    // Re-prove the stored code against the published hash whenever that hash is
+    // one we have not checked yet. Covers a session restored from storage, and a
+    // slot that got reissued to a fresh code while this tab was sitting open.
+    if(a.check!==lastCheck){
+      lastCheck=a.check;
+      const expecting=a.check;
       sha256hex(session.code||'').then(h=>{
-        if(h!==a.check) expire('ההתחברות פגה - התחבר שוב');
+        if(h!==expecting&&lastCheck===expecting) expire('ההתחברות פגה - התחבר שוב');
       }).catch(()=>{});
     }
     setStep('stats');
@@ -1050,20 +1071,6 @@ function syncAuth(){
     return;
   }
 
-  if(!session.id){ setStep('login'); return; }
-
-  if(a&&a.error==='offline'){
-    clearSession();
-    setStep('login');
-    meMsg('לא מצאנו אותך מחובר לשרת. תיכנס למשחק ונסה שוב.','err');
-    return;
-  }
-  if(a&&a.error==='blocked'){
-    clearSession();
-    setStep('login');
-    meMsg('השחקן הזה חסם התחברות לאתר עם השם שלו. כדי לאשר - הרץ /linkblock במשחק.','err');
-    return;
-  }
   if(a&&a.check){
     setStep('code');
     if($me.msg.classList.contains('wait')||!$me.msg.textContent){
@@ -1072,9 +1079,7 @@ function syncAuth(){
     return;
   }
   if(Date.now()-session.requestedAt>CODE_WAIT_MS){
-    clearSession();
-    setStep('login');
-    meMsg('השרת לא ענה. ודא שהשרת מחובר ונסה שוב.','err');
+    expire('השרת לא ענה. ודא שהשרת מחובר ונסה שוב.');
     return;
   }
   setStep('code');
